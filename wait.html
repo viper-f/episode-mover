@@ -1,0 +1,97 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link rel="stylesheet" href="node_modules/soft-ui-library/dist/css/neumorphism-ui.css"/>
+    <style>
+        .wrapper {
+            margin: 50px;
+            padding: 20px;
+        }
+        input {
+          margin-bottom: 20px;
+        }
+        p {
+            line-height: 1.75rem;
+        }
+        .nav-container {
+            padding: 10px 30px;
+        }
+    </style>
+</head>
+<body class="light-mode">
+<header class="sul-box-raised-2 sm">
+    <div class="nav-container">
+            <h2 class="brand-text">Episode Mover</h2>
+    </div>
+</header>
+<div class="wrapper sul-box-raised-1 with-hover">
+    <h2 class="title-section">💡 Обработка</h2>
+    <p>
+        Ваш эпизод обрабатывается
+    </p>
+</div>
+<div class="wrapper sul-box-raised-1 with-hover">
+    <div id="meter" style="float: right"></div>
+<p id="status"></p>
+</div>
+
+<script>
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    let status = 'starting';
+    let session_id = {session_id};
+    const container = document.getElementById('status');
+    const meter = document.getElementById('meter');
+
+    async function updateStatus() {
+        console.log(status);
+        while (status !== 'finish' || status !== 'error') {
+            await sleep(1000);
+            console.log('/status?session_id='+session_id);
+            fetch('/status?session_id='+session_id)
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (myJson) {
+                    if (myJson.status !== status) {
+                        status = myJson.status;
+                        console.log(myJson);
+                        switch (status) {
+                            case 'starting':
+                                container.innerHTML = 'Инициализация...';
+                                break;
+                            case 'copying':
+                                container.innerHTML = 'Посты скачиваются...';
+                                break;
+                            case 'copied':
+                                container.innerHTML = 'Все посты скопированы';
+                                break;
+                            case 'preparing_past':
+                                container.innerHTML = 'Подготовка к выкладке';
+                                break;
+                            case 'pasting':
+                                container.innerHTML = 'Посты выкладываются в новый эпизод';
+                                break;
+                            case 'finish':
+                                container.innerHTML = 'Все готово. Можно вернуться на <a class="sul-link" href="/">главную страницу</a>';
+                                break;
+                            case 'error':
+                                container.innerHTML = 'Error! ' + myJson.message;
+                                break;
+                        }
+                    }
+                    if (!isNaN(myJson.meter)) {
+                        meter.innerHTML = myJson.meter + '/' + myJson.total;
+                    } else {
+                        meter.innerHTML = '';
+                    }
+                });
+        }
+    }
+
+    updateStatus();
+</script>
+</body>
+</html>
